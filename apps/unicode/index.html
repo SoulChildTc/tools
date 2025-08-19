@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicode 码表浏览器</title>
+    <meta name="description" content="在线浏览与搜索 Unicode 字符，支持复制编码与 HTML 实体、分类与分页、深色模式。">
+    <meta name="keywords" content="Unicode, 字符, 码表, HTML 实体, Emoji, 工具, 查询, 复制">
+    <meta name="robots" content="index,follow">
+    <meta name="author" content="Soulchild">
+    <meta name="theme-color" content="#3B82F6">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Unicode 码表浏览器">
+    <meta property="og:description" content="在线浏览与搜索 Unicode 字符，支持复制编码与 HTML 实体、分类与分页、深色模式。">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Unicode 码表浏览器">
+    <meta name="twitter:description" content="在线浏览与搜索 Unicode 字符，支持复制编码与 HTML 实体、分类与分页、深色模式。">
+    <script src="js/tailwind.js"></script>
+    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6366F1',
+                        dark: '#1E293B',
+                        light: '#F8FAFC',
+                        accent: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .char-card {
+                @apply flex flex-col items-center justify-center p-4 rounded-lg border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-300 cursor-pointer bg-white dark:bg-dark dark:border-gray-700;
+            }
+            .category-item {
+                @apply py-2 px-3 rounded-md hover:bg-primary/10 cursor-pointer transition-all duration-200 dark:hover:bg-primary/20;
+            }
+            .category-item.active {
+                @apply bg-primary/20 text-primary font-medium dark:bg-primary/30;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Unicode 码表浏览器",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "zh-CN",
+      "description": "在线浏览与搜索 Unicode 字符，支持复制编码与 HTML 实体、分类与分页、深色模式。",
+      "author": {"@type": "Person", "name": "Soulchild"}
+    }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center mb-3 md:mb-0">
+                <i class="fa fa-code text-primary text-2xl mr-2"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-primary">Unicode 码表浏览器</h1>
+            </div>
+            
+            <div class="w-full md:w-auto flex items-center">
+                <div class="relative w-full md:w-64 mr-3">
+                    <input type="text" id="search-input" placeholder="搜索 Unicode 字符或编码..." 
+                        class="w-full px-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:block"></i>
+                </button>
+                <a href="https://soulchild.cn/?utm_source=unicode-tool&utm_medium=referral&utm_campaign=sitewide_nav" target="_blank" rel="noopener" class="ml-3 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm hover:border-primary">博客</a>
+                <a href="https://soulchild.cn/rss.xml?utm_source=unicode-tool&utm_medium=referral&utm_campaign=sitewide_nav" target="_blank" rel="noopener" class="ml-2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm hover:border-primary">RSS</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        <!-- 分类侧边栏 -->
+        <aside class="hidden lg:block lg:w-64 w-full lg:h-[calc(100vh-10rem)] overflow-y-auto scrollbar-hide bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fa fa-folder-open text-primary mr-2"></i>Unicode 分类
+            </h2>
+            <div class="space-y-1" id="category-list">
+                <!-- 分类将通过JavaScript动态生成 -->
+            </div>
+        </aside>
+
+        <!-- 字符展示区 -->
+        <section class="flex-grow">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold" id="category-title">全部 Unicode 字符</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400" id="category-description">浏览所有 Unicode 字符，点击查看详情</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 移动端分类横向列表 -->
+            <div class="lg:hidden bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 mb-4">
+                <div id="mobile-category-list" class="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide"></div>
+            </div>
+
+            <!-- 字符网格 -->
+            <div id="characters-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                <!-- 字符将通过JavaScript动态生成 -->
+                <div class="col-span-full flex items-center justify-center py-16">
+                    <div class="text-center">
+                        <i class="fa fa-spinner fa-spin text-3xl text-primary mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">加载 Unicode 字符中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分页控件占位: 已改为固定底部显示 -->
+        </section>
+    </main>
+
+    <!-- 底部分页条（粘性定位，避免遮挡页脚） -->
+    <div class="sticky bottom-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-2">
+            <div class="flex items-center justify-center min-h-[2.5rem]">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2" id="pagination">
+                        <!-- 分页将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-gray-500 dark:text-gray-400">每页显示:</span>
+                        <select id="items-per-page" class="rounded-lg border border-gray-300 px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <option value="24">24</option>
+                            <option value="48" selected>48</option>
+                            <option value="96">96</option>
+                            <option value="192">192</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 字符详情模态框 -->
+    <div id="char-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-semibold">字符详情</h3>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col items-center mb-6">
+                    <div id="modal-char" class="text-6xl mb-4"></div>
+                    <div id="modal-name" class="text-center font-medium text-gray-700 dark:text-gray-300"></div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-500 dark:text-gray-400">Unicode 编码:</span>
+                        <div class="flex items-center gap-2">
+                            <span id="modal-code" class="font-mono"></span>
+                            <button id="copy-code" class="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-primary hover:text-primary transition-colors">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-500 dark:text-gray-400">HTML 实体:</span>
+                        <div class="flex items-center gap-2">
+                            <span id="modal-html" class="font-mono text-sm"></span>
+                            <button id="copy-html" class="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-primary hover:text-primary transition-colors">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-500 dark:text-gray-400">分类:</span>
+                        <span id="modal-category"></span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button id="copy-char" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                        <i class="fa fa-copy"></i>
+                        <span>复制字符</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4">
+        <div class="container mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            <p>Unicode 码表浏览器 | 展示 Unicode 标准字符集</p>
+            <p class="mt-1">数据来源: Unicode 15.0 标准</p>
+            <div class="mt-3 space-x-4">
+                <a href="https://soulchild.cn/?utm_source=unicode-tool&utm_medium=referral&utm_campaign=sitewide_footer" class="text-primary hover:underline" rel="noopener" target="_blank">访问 SoulChild随笔记 </a>
+                <a href="https://www.soulchild.cn/index.xml" class="text-primary hover:underline" rel="noopener" target="_blank">订阅 RSS</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Unicode 分类数据 - 主要区块
+        const unicodeCategories = [
+            { id: 'basic-latin', name: '基本拉丁字母', range: [0x0020, 0x007F], description: 'ASCII字符集，包括大小写字母、数字和基本符号' },
+            { id: 'latin-1', name: '拉丁-1补充', range: [0x0080, 0x00FF], description: '扩展拉丁字符，包括带重音的字符和特殊符号' },
+            { id: 'latin-ext-a', name: '拉丁扩展-A', range: [0x0100, 0x017F], description: '更多扩展拉丁字符' },
+            { id: 'latin-ext-b', name: '拉丁扩展-B', range: [0x0180, 0x024F], description: '进一步扩展的拉丁字符' },
+            { id: 'ipa', name: '国际音标', range: [0x0250, 0x02AF], description: '国际音标字符' },
+            { id: 'greek', name: '希腊字母', range: [0x0370, 0x03FF], description: '希腊语字母表及相关符号' },
+            { id: 'cyrillic', name: '西里尔字母', range: [0x0400, 0x04FF], description: '西里尔字母表，用于俄语等语言' },
+            { id: 'armenian', name: '亚美尼亚字母', range: [0x0530, 0x058F], description: '亚美尼亚语字母表' },
+            { id: 'hebrew', name: '希伯来字母', range: [0x0590, 0x05FF], description: '希伯来语字母表' },
+            { id: 'arabic', name: '阿拉伯字母', range: [0x0600, 0x06FF], description: '阿拉伯语字母表' },
+            { id: 'devanagari', name: '天城文', range: [0x0900, 0x097F], description: '用于印地语等语言的文字' },
+            { id: 'katakana', name: '片假名', range: [0x30A0, 0x30FF], description: '日语片假名字符' },
+            { id: 'hiragana', name: '平假名', range: [0x3040, 0x309F], description: '日语平假名字符' },
+            { id: 'cjk-basic', name: 'CJK基本汉字', range: [0x4E00, 0x9FFF], description: '基本中日韩统一表意文字' },
+            { id: 'cjk-supplement', name: 'CJK补充汉字', range: [0x3400, 0x4DBF], description: '补充中日韩统一表意文字' },
+            { id: 'symbols', name: '符号', range: [0x2000, 0x26FF], description: '各种符号，包括标点、数学符号等' },
+            { id: 'dingbats', name: '装饰符号', range: [0x2700, 0x27BF], description: '装饰性符号和图标' },
+            { id: 'emoji', name: '表情符号', range: [0x1F600, 0x1F64F], description: '情感和表情符号' },
+            { id: 'emoji-symbols', name: '符号表情', range: [0x1F300, 0x1F5FF], description: '符号和物体表情' },
+            { id: 'emoji-people', name: '人物表情', range: [0x1F600, 0x1F64F], description: '人物和表情符号' },
+            { id: 'emoji-animals', name: '动物表情', range: [0x1F400, 0x1F4FF], description: '动物和自然表情符号' }
+        ];
+
+        // 当前状态
+        let currentCategory = null;
+        let currentPage = 1;
+        let itemsPerPage = 48;
+        let searchQuery = '';
+        let renderToken = 0;
+        const PREVIEW_COUNT = 100; // 全部视图下每类预览数量
+
+        // DOM 元素
+        const categoryListEl = document.getElementById('category-list');
+        const mobileCategoryListEl = document.getElementById('mobile-category-list');
+        const charactersGridEl = document.getElementById('characters-grid');
+        const paginationEl = document.getElementById('pagination');
+        const categoryTitleEl = document.getElementById('category-title');
+        const categoryDescriptionEl = document.getElementById('category-description');
+        const searchInputEl = document.getElementById('search-input');
+        const itemsPerPageEl = document.getElementById('items-per-page');
+        const charModalEl = document.getElementById('char-modal');
+        const modalCharEl = document.getElementById('modal-char');
+        const modalNameEl = document.getElementById('modal-name');
+        const modalCodeEl = document.getElementById('modal-code');
+        const modalHtmlEl = document.getElementById('modal-html');
+        const modalCategoryEl = document.getElementById('modal-category');
+        const closeModalEl = document.getElementById('close-modal');
+        const copyCharEl = document.getElementById('copy-char');
+        const copyCodeEl = document.getElementById('copy-code');
+        const copyHtmlEl = document.getElementById('copy-html');
+        const themeToggleEl = document.getElementById('theme-toggle');
+
+        // 初始化
+        function init() {
+            // 渲染分类列表
+            renderCategories();
+            
+            // 加载默认分类
+            loadCategory(unicodeCategories[0]);
+            
+            // 事件监听
+            searchInputEl.addEventListener('input', handleSearch);
+            itemsPerPageEl.addEventListener('change', handleItemsPerPageChange);
+            closeModalEl.addEventListener('click', closeModal);
+            copyCharEl.addEventListener('click', copyCharacter);
+            copyCodeEl.addEventListener('click', copyCode);
+            copyHtmlEl.addEventListener('click', copyHtml);
+            themeToggleEl.addEventListener('click', toggleTheme);
+            
+            // 检查深色模式偏好
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // 根据分类 id 选择合适的图标（Font Awesome 4.7）
+        function getCategoryIcon(categoryId) {
+            const mapping = {
+                'basic-latin': 'fa fa-font',
+                'latin-1': 'fa fa-font',
+                'latin-ext-a': 'fa fa-font',
+                'latin-ext-b': 'fa fa-font',
+                'ipa': 'fa fa-microphone',
+                'greek': 'fa fa-superscript',
+                'cyrillic': 'fa fa-language',
+                'armenian': 'fa fa-book',
+                'hebrew': 'fa fa-align-right',
+                'arabic': 'fa fa-align-right',
+                'devanagari': 'fa fa-language',
+                'katakana': 'fa fa-language',
+                'hiragana': 'fa fa-language',
+                'cjk-basic': 'fa fa-file-text-o',
+                'cjk-supplement': 'fa fa-file-text-o',
+                'symbols': 'fa fa-asterisk',
+                'dingbats': 'fa fa-star',
+                'emoji': 'fa fa-smile-o',
+                'emoji-symbols': 'fa fa-picture-o',
+                'emoji-people': 'fa fa-user',
+                'emoji-animals': 'fa fa-paw'
+            };
+            return mapping[categoryId] || 'fa fa-font';
+        }
+
+        // 渲染分类列表
+        function renderCategories() {
+            if (categoryListEl) categoryListEl.innerHTML = '';
+            if (mobileCategoryListEl) mobileCategoryListEl.innerHTML = '';
+
+            const createItem = (label, id, onClick, extraClasses = '', iconClass = 'fa fa-font') => {
+                const el = document.createElement('div');
+                el.className = `category-item ${extraClasses}`.trim();
+                el.dataset.categoryId = id;
+                el.innerHTML = `<i class="${iconClass} mr-2"></i>${label}`;
+                el.addEventListener('click', onClick);
+                return el;
+            };
+
+            // 全部
+            const allHandler = () => loadAllCategories();
+            const allDesktop = createItem('全部字符', 'all', allHandler, '', 'fa fa-th-large');
+            allDesktop.classList.add('active');
+            if (categoryListEl) categoryListEl.appendChild(allDesktop);
+
+            if (mobileCategoryListEl) {
+                const allMobile = createItem('全部', 'all', allHandler, 'inline-flex items-center px-3 py-1 text-sm', 'fa fa-th-large');
+                allMobile.classList.add('active');
+                mobileCategoryListEl.appendChild(allMobile);
+            }
+
+            // 分类项
+            unicodeCategories.forEach(category => {
+                const handler = () => loadCategory(category);
+
+                const iconClass = getCategoryIcon(category.id);
+
+                const item = createItem(category.name, category.id, handler, '', iconClass);
+                if (categoryListEl) categoryListEl.appendChild(item);
+
+                if (mobileCategoryListEl) {
+                    const mobileItem = createItem(category.name, category.id, handler, 'inline-flex items-center px-3 py-1 text-sm', iconClass);
+                    mobileCategoryListEl.appendChild(mobileItem);
+                }
+            });
+        }
+
+        // 加载指定分类
+        function loadCategory(category) {
+            currentCategory = category;
+            currentPage = 1;
+            
+            // 更新分类标题和描述
+            categoryTitleEl.textContent = category.name;
+            categoryDescriptionEl.textContent = category.description;
+            
+            // 更新活跃的分类项
+            setActiveCategory(category.id);
+            
+            // 渲染字符
+            renderCharacters();
+        }
+
+        // 加载所有分类
+        function loadAllCategories() {
+            currentCategory = null;
+            currentPage = 1;
+            
+            // 更新分类标题和描述（预览提示）
+            categoryTitleEl.textContent = '全部 Unicode 字符';
+            categoryDescriptionEl.textContent = '浏览所有 Unicode 字符（每类仅展示前 ' + PREVIEW_COUNT + ' 个），点击分类查看完整';
+            
+            // 更新活跃的分类项
+            setActiveCategory('all');
+            
+            // 渲染字符
+            renderCharacters();
+        }
+
+        // 设置分类激活态（兼容桌面与移动端分类列表）
+        function setActiveCategory(categoryId) {
+            document.querySelectorAll('.category-item').forEach(item => {
+                const id = item.dataset && item.dataset.categoryId;
+                if (!id) return;
+                if (categoryId === 'all') {
+                    if (id === 'all') {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                } else {
+                    if (id === categoryId) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                }
+            });
+        }
+        // 渲染字符（分块渐进渲染）
+        function renderCharacters() {
+            const myToken = ++renderToken;
+            // 保留旧分页，待统计完成后再整体替换，避免闪烁
+            // 骨架占位，优先给当前页提供视觉反馈
+            charactersGridEl.innerHTML = generateSkeletonHTML(itemsPerPage);
+
+            const segments = buildSegmentsForCurrentView();
+            const pageStartIndex = (currentPage - 1) * itemsPerPage + 1; // 计数从1开始
+            const pageEndIndex = pageStartIndex + itemsPerPage - 1;
+
+            let segmentIndex = 0;
+            let currentCode = segments.length ? segments[0].start : 0;
+            let matchedCount = 0; // 过滤后累计条数（决定分页）
+            let renderedOnPage = 0; // 已渲染到当前页的数量
+
+            function processChunk() {
+                if (myToken !== renderToken) return; // 被新一轮渲染打断
+
+                const maxIterations = 1200; // 每帧最多处理的代码点数量
+                let iterations = 0;
+                const fragment = document.createDocumentFragment();
+
+                while (segmentIndex < segments.length && iterations < maxIterations) {
+                    if (currentCode > segments[segmentIndex].end) {
+                        segmentIndex++;
+                        if (segmentIndex < segments.length) {
+                            currentCode = segments[segmentIndex].start;
+                        }
+                        continue;
+                    }
+
+                    // 跳过控制字符
+                    if ((currentCode >= 0x0000 && currentCode <= 0x001F) || (currentCode >= 0x007F && currentCode <= 0x009F)) {
+                        currentCode++;
+                        iterations++;
+                        continue;
+                    }
+
+                    const categoryName = findCategoryNameForCode(currentCode) || '其他';
+                    const charObj = {
+                        code: currentCode,
+                        char: String.fromCodePoint(currentCode),
+                        category: categoryName
+                    };
+
+                    // 搜索过滤
+                    let passed = true;
+                    if (searchQuery) {
+                        const query = searchQuery.toLowerCase();
+                        const codeStr = `U+${charObj.code.toString(16).toUpperCase().padStart(4, '0')}`;
+                        const codeMatch = codeStr.toLowerCase().includes(query);
+                        // 这里名称映射有限，仅匹配已知名称
+                        const name = getCharacterName(charObj.code);
+                        const nameMatch = name ? name.toLowerCase().includes(query) : false;
+                        passed = codeMatch || nameMatch;
+                    }
+
+                    if (passed) {
+                        matchedCount++;
+                        if (matchedCount >= pageStartIndex && matchedCount <= pageEndIndex) {
+                            // 移除仍存在的骨架占位
+                            removeSkeletonPlaceholders();
+                            fragment.appendChild(createCharCard(charObj));
+                            renderedOnPage++;
+                        }
+                    }
+
+                    currentCode++;
+                    iterations++;
+                }
+
+                if (fragment.childNodes.length) {
+                    charactersGridEl.appendChild(fragment);
+                }
+
+                if (segmentIndex < segments.length) {
+                    requestAnimationFrame(processChunk);
+                } else {
+                    // 遍历完成
+                    if (myToken !== renderToken) return;
+
+                    if (matchedCount === 0) {
+                        showEmptyState();
+                    } else {
+                        // 极端情况：无一条落在当前页，移除骨架
+                        removeSkeletonPlaceholders();
+                    }
+
+                    const totalPages = Math.max(1, Math.ceil(matchedCount / itemsPerPage));
+                    renderPagination(totalPages);
+                }
+            }
+
+            requestAnimationFrame(processChunk);
+        }
+
+        // 为当前视图生成遍历段（支持“全部”与单分类）
+        function buildSegmentsForCurrentView() {
+            const segments = [];
+            if (currentCategory) {
+                const { range } = currentCategory;
+                segments.push({ start: range[0], end: range[1] });
+            } else {
+                unicodeCategories.forEach(category => {
+                    const { range } = category;
+                    segments.push({ start: range[0], end: Math.min(range[1], range[0] + PREVIEW_COUNT) });
+                });
+            }
+            return segments;
+        }
+
+        // 根据 code 找到分类名称
+        function findCategoryNameForCode(code) {
+            for (const cat of unicodeCategories) {
+                if (code >= cat.range[0] && code <= cat.range[1]) {
+                    return cat.name;
+                }
+            }
+            return null;
+        }
+
+        // 创建字符卡片元素
+        function createCharCard(char) {
+            const charCard = document.createElement('div');
+            charCard.className = 'char-card';
+            charCard.innerHTML = `
+                <div class="text-3xl mb-2">${char.char}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    U+${char.code.toString(16).toUpperCase().padStart(4, '0')}
+                </div>
+            `;
+            charCard.addEventListener('click', () => openCharDetails(char));
+            return charCard;
+        }
+
+        // 空状态
+        function showEmptyState() {
+            charactersGridEl.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                    <i class="fa fa-search text-3xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500 dark:text-gray-400">未找到匹配的字符</p>
+                    <button onclick="clearSearch()" class="mt-2 text-primary hover:underline">清除搜索</button>
+                </div>
+            `;
+        }
+
+        // 骨架占位
+        function generateSkeletonHTML(count) {
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `
+                    <div class="char-card animate-pulse">
+                        <div class="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                        <div class="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                `;
+            }
+            return html;
+        }
+
+        // 移除骨架占位（若存在则逐个移除，避免清空已渲染的真实卡片）
+        function removeSkeletonPlaceholders() {
+            const skeletons = charactersGridEl.querySelectorAll('.animate-pulse');
+            if (skeletons.length) {
+                skeletons.forEach(node => node.remove());
+            }
+        }
+
+        // 生成指定范围内的字符
+        function generateCharactersInRange(start, end) {
+            const characters = [];
+            
+            for (let code = start; code <= end; code++) {
+                // 跳过一些控制字符
+                if ((code >= 0x0000 && code <= 0x001F) || (code >= 0x007F && code <= 0x009F)) {
+                    continue;
+                }
+                
+                // 找到字符所属的分类
+                let category = null;
+                for (const cat of unicodeCategories) {
+                    if (code >= cat.range[0] && code <= cat.range[1]) {
+                        category = cat;
+                        break;
+                    }
+                }
+                
+                characters.push({
+                    code,
+                    char: String.fromCodePoint(code),
+                    category: category ? category.name : '其他'
+                });
+            }
+            
+            return characters;
+        }
+
+        // 渲染字符网格
+        function renderCharacterGrid(characters) {
+            if (characters.length === 0) {
+                charactersGridEl.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                        <i class="fa fa-search text-3xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">未找到匹配的字符</p>
+                        <button onclick="clearSearch()" class="mt-2 text-primary hover:underline">清除搜索</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            charactersGridEl.innerHTML = '';
+            
+            characters.forEach(char => {
+                const charCard = document.createElement('div');
+                charCard.className = 'char-card';
+                charCard.innerHTML = `
+                    <div class="text-3xl mb-2">${char.char}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                        U+${char.code.toString(16).toUpperCase().padStart(4, '0')}
+                    </div>
+                `;
+                
+                charCard.addEventListener('click', () => openCharDetails(char));
+                charactersGridEl.appendChild(charCard);
+            });
+        }
+
+        // 渲染分页控件
+        function renderPagination(totalPages) {
+            // 使用文档片段构建，最后以原位 replaceChildren，避免闪烁
+            const fragment = document.createDocumentFragment();
+
+            // 只有一页时清空分页
+            if (totalPages <= 1) {
+                paginationEl.replaceChildren();
+                return;
+            }
+
+            // 上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.className = `h-9 w-9 inline-flex items-center justify-center rounded-md border text-sm transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:text-primary hover:border-primary'}`;
+            prevButton.innerHTML = '<i class="fa fa-chevron-left"></i>';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderCharacters();
+                }
+            });
+            fragment.appendChild(prevButton);
+
+            // 页码按钮 - 只显示当前页附近的页码
+            const visiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(visiblePages / 2));
+            let endPage = startPage + visiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - visiblePages + 1);
+            }
+
+            // 显示第一页（如果不包含在可见范围内）
+            if (startPage > 1) {
+                addPageButton(1, fragment);
+                if (startPage > 2) {
+                    addEllipsis(fragment);
+                }
+            }
+
+            // 显示可见页码
+            for (let i = startPage; i <= endPage; i++) {
+                addPageButton(i, fragment);
+            }
+
+            // 显示最后一页（如果不包含在可见范围内）
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    addEllipsis(fragment);
+                }
+                addPageButton(totalPages, fragment);
+            }
+
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.className = `h-9 w-9 inline-flex items-center justify-center rounded-md border text-sm transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400 dark:border-gray-700 dark:text-gray-500' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:text-primary hover:border-primary'}`;
+            nextButton.innerHTML = '<i class="fa fa-chevron-right"></i>';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderCharacters();
+                }
+            });
+            fragment.appendChild(nextButton);
+
+            paginationEl.replaceChildren(fragment);
+        }
+
+        // 添加页码按钮
+        function addPageButton(pageNum, container = paginationEl) {
+            const button = document.createElement('button');
+            button.className = `h-9 min-w-[2.25rem] px-3 inline-flex items-center justify-center rounded-md text-sm transition-colors ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:text-primary hover:border-primary'}`;
+            button.textContent = pageNum;
+            button.addEventListener('click', () => {
+                currentPage = pageNum;
+                renderCharacters();
+            });
+            container.appendChild(button);
+        }
+
+        // 添加省略号
+        function addEllipsis(container = paginationEl) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-2 text-gray-400 dark:text-gray-500';
+            ellipsis.textContent = '...';
+            container.appendChild(ellipsis);
+        }
+
+        // 打开字符详情模态框
+        function openCharDetails(char) {
+            modalCharEl.textContent = char.char;
+            modalCodeEl.textContent = `U+${char.code.toString(16).toUpperCase().padStart(4, '0')}`;
+            modalHtmlEl.textContent = `&#x${char.code.toString(16).toLowerCase()};`;
+            modalCategoryEl.textContent = char.category;
+            
+            // 尝试获取字符名称（简化版）
+            let charName = getCharacterName(char.code);
+            modalNameEl.textContent = charName || '-';
+            
+            // 显示模态框
+            charModalEl.classList.remove('opacity-0', 'pointer-events-none');
+            charModalEl.querySelector('div').classList.remove('scale-95');
+            charModalEl.querySelector('div').classList.add('scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            charModalEl.classList.add('opacity-0', 'pointer-events-none');
+            charModalEl.querySelector('div').classList.remove('scale-100');
+            charModalEl.querySelector('div').classList.add('scale-95');
+            document.body.style.overflow = '';
+        }
+
+        // 复制字符到剪贴板
+        function copyCharacter() {
+            const char = modalCharEl.textContent;
+            const originalText = copyCharEl.innerHTML;
+            copyTextToClipboard(char).then((success) => {
+                if (success) {
+                    copyCharEl.innerHTML = '<i class="fa fa-check"></i><span>已复制</span>';
+                } else {
+                    copyCharEl.innerHTML = '<i class="fa fa-exclamation-triangle"></i><span>复制失败</span>';
+                }
+                setTimeout(() => {
+                    copyCharEl.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        function copyCode() {
+            const text = modalCodeEl.textContent;
+            const original = copyCodeEl.innerHTML;
+            copyTextToClipboard(text).then((success) => {
+                copyCodeEl.innerHTML = success ? '<i class="fa fa-check"></i> ' : '<i class="fa fa-exclamation-triangle"></i> 失败';
+                setTimeout(() => (copyCodeEl.innerHTML = original), 1500);
+            });
+        }
+
+        function copyHtml() {
+            const text = modalHtmlEl.textContent;
+            const original = copyHtmlEl.innerHTML;
+            copyTextToClipboard(text).then((success) => {
+                copyHtmlEl.innerHTML = success ? '<i class="fa fa-check"></i> ' : '<i class="fa fa-exclamation-triangle"></i> 失败';
+                setTimeout(() => (copyHtmlEl.innerHTML = original), 1500);
+            });
+        }
+
+        // 复制文本到剪贴板（带回退方案）
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text)
+                    .then(() => true)
+                    .catch(() => false);
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-9999px';
+            textarea.style.left = '-9999px';
+            textarea.setAttribute('readonly', '');
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            let success = false;
+            try {
+                success = document.execCommand('copy');
+            } catch (e) {
+                success = false;
+            }
+            document.body.removeChild(textarea);
+            return Promise.resolve(success);
+        }
+
+        // 处理搜索
+        function handleSearch(e) {
+            searchQuery = e.target.value.trim();
+            currentPage = 1;
+            renderCharacters();
+        }
+
+        // 清除搜索
+        function clearSearch() {
+            searchInputEl.value = '';
+            searchQuery = '';
+            currentPage = 1;
+            renderCharacters();
+        }
+
+        // 处理每页显示数量变化
+        function handleItemsPerPageChange(e) {
+            itemsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            renderCharacters();
+        }
+
+        // 切换深色/浅色模式
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+
+        // 滚动到顶部
+        function scrollToTop() {
+            charactersGridEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 获取字符名称（简化版）
+        function getCharacterName(code) {
+            // 这是一个简化的字符名称映射，实际应用中可以使用更完整的数据库
+            const names = {
+                0x0041: '拉丁大写字母 A',
+                0x0061: '拉丁小写字母 a',
+                0x0030: '数字 0',
+                0x0021: '感叹号',
+                0x20AC: '欧元符号',
+                0x3042: '平假名 ア',
+                0x30A2: '片假名 ア',
+                0x4E00: '汉字 "一"',
+                0x1F600: '笑脸表情符号',
+                0x1F43E: '爪印符号'
+            };
+            
+            return names[code];
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+
+
